@@ -1,0 +1,50 @@
+project:
+  name: bidirectional-table-text-alignment
+  seed: 42
+
+paths:
+  raw_dir: outputs/data/raw
+  processed_dir: outputs/data/processed
+  checkpoint_dir: outputs/checkpoints
+  prediction_dir: outputs/predictions
+  metric_dir: outputs/metrics
+
+data:
+  debug:
+    train: 500
+    valid: 100
+    test: 100
+  
+  small:
+    train: 5000
+    valid: 1000
+    test: 1000
+
+  medium:
+    train: 20000
+    valid: 5000
+    test: 5000
+
+model:
+  name: google-t5/t5-small
+  max_input_length: 512
+  max_target_length: 96
+
+training:
+  epochs: 3
+  batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 0.0003
+  weight_decay: 0.01
+  eval_steps: 500
+  save_steps: 500
+  logging_steps: 50
+  save_total_limit: 3
+
+generation:
+  num_beams: 4
+  max_new_tokens: 96
+
+serialization:
+  evidence_window: 2
+  max_input_tokens: 512
