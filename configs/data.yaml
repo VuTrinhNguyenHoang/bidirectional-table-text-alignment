@@ -1,0 +1,12 @@
+data:
+  debug:
+    train: 500
+    valid: 100
+  
+  small:
+    train: 5000
+    valid: 1000
+
+  medium:
+    train: 20000
+    valid: 5000
