@@ -13,17 +13,14 @@ data:
   debug:
     train: 500
     valid: 100
-    test: 100
   
   small:
     train: 5000
     valid: 1000
-    test: 1000
 
   medium:
     train: 20000
     valid: 5000
-    test: 5000
 
 model:
   name: google-t5/t5-small

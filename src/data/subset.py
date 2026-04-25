@@ -5,7 +5,6 @@ def build_subset(dataset: DatasetDict, mode: str, config: dict):
 
     n_train = config["data"][mode]["train"]
     n_valid = config["data"][mode]["valid"]
-    n_test = config["data"][mode]["test"]
 
     train_subset = (
         dataset["train"]
@@ -20,9 +19,9 @@ def build_subset(dataset: DatasetDict, mode: str, config: dict):
     )
 
     test_subset = (
-        dataset["test"]
+        dataset["validation"]
         .shuffle(seed=seed)
-        .select(range(n_test))
+        .select(range(n_valid))
     )
 
     return train_subset, valid_subset, test_subset
