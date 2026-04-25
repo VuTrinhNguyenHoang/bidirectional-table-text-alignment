@@ -12,7 +12,7 @@ from src.utils.io import ensure_dir, load_yaml, save_json, save_jsonl
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium"])
+    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
     parser.add_argument(
         "--run_name",
         type=str,

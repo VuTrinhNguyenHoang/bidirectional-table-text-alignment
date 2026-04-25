@@ -8,7 +8,7 @@ from src.utils.io import load_yaml
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium"])
+    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
     parser.add_argument(
         "--input_col",
         type=str,

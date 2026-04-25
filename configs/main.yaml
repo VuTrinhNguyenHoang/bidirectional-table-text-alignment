@@ -22,6 +22,10 @@ data:
     train: 20000
     valid: 5000
 
+  full:
+    train: null
+    valid: null
+
 model:
   name: google-t5/t5-small
   max_input_length: 512
