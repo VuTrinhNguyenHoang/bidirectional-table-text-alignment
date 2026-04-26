@@ -47,3 +47,25 @@ generation:
   num_beams: 4
   max_new_tokens: 64
   no_repeat_ngram_size: 3
+
+cell_selector:
+  name: distilbert-base-uncased
+  max_input_length: 384
+  top_k: 5
+
+training_cell_selector:
+  epochs: 3
+  negative_ratio: 5
+  learning_rate: 0.00002
+  weight_decay: 0.01
+  batch_size: 16
+  gradient_accumulation_steps: 1
+  eval_steps: 1000
+  save_steps: 1000
+  logging_steps: 100
+  save_total_limit: 2
+  load_best_model_at_end: true
+  checkpoint_subdir: cell_selector
+
+e2e:
+  use_heuristic_headers: true
