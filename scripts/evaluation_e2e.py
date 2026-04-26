@@ -17,6 +17,11 @@ from src.evaluation.faithfulness import (
     simple_faithfulness_check,
     summarize_faithfulness,
 )
+from src.evaluation.consistency import (
+    compute_pairwise_cosine_scores,
+    load_sentence_embedding_model,
+    summarize_cosine_scores,
+)
 from src.evaluation.generation_metrics import compute_generation_metrics
 from src.utils.io import ensure_dir, load_yaml, save_json, save_jsonl
 
@@ -29,6 +34,7 @@ def parse_args():
         default="small",
         choices=["debug", "small", "medium", "full"],
     )
+    parser.add_argument("--top_k", type=int, default=None)
 
     return parser.parse_args()
 
@@ -97,6 +103,9 @@ def main():
     args = parse_args()
     config = load_yaml(args.config)
 
+    if args.top_k is not None:
+        config["cell_selector"]["top_k"] = args.top_k
+
     data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
     test_dataset = load_from_disk(f"{data_dir}/test")
 
@@ -122,6 +131,11 @@ def main():
 
     generator_model.eval()
     selector_model.eval()
+
+    sentence_model = load_sentence_embedding_model(
+        config["consistency"]["sentence_embedding_model"],
+        device=device,
+    )
 
     records = []
     cell_metric_records = []
@@ -185,12 +199,33 @@ def main():
     predictions = [record["prediction"] for record in records]
     references = [record["target"] for record in records]
 
+    cosine_scores = compute_pairwise_cosine_scores(
+        model=sentence_model,
+        predictions=predictions,
+        references=references,
+    )
+
+    for record, cosine_score in zip(records, cosine_scores):
+        record["semantic_consistency"] = {
+            "cosine_similarity": cosine_score
+        }
+
+    generation_metrics = compute_generation_metrics(predictions, references)
+    faithfulness_metrics = summarize_faithfulness(faithfulness_records)
+    semantic_metrics = summarize_cosine_scores(cosine_scores)
+
     metrics = {
         "mode": args.mode,
         "top_k": config["cell_selector"]["top_k"],
-        "generation": compute_generation_metrics(predictions, references),
         "cell_selection": average_metric_dicts(cell_metric_records),
-        "faithfulness": summarize_faithfulness(faithfulness_records),
+
+        "consistency": {
+            "lexical": generation_metrics,
+            "semantic": semantic_metrics,
+            "number_faithfulness": faithfulness_metrics,
+        },
+        "generation": generation_metrics,
+        "faithfulness": faithfulness_metrics,
     }
 
     pred_dir = f"{config['paths']['prediction_dir']}/{args.mode}"
@@ -199,8 +234,9 @@ def main():
     ensure_dir(pred_dir)
     ensure_dir(metric_dir)
 
-    save_jsonl(records, f"{pred_dir}/e2e_predictions.jsonl")
-    save_json(metrics, f"{metric_dir}/e2e_metrics.json")
+    top_k = config["cell_selector"]["top_k"]
+    save_jsonl(records, f"{pred_dir}/e2e_predictions_top{top_k}.jsonl")
+    save_json(metrics, f"{metric_dir}/e2e_metrics_top{top_k}.json")
 
     print(json.dumps(metrics, indent=2, ensure_ascii=False))
 

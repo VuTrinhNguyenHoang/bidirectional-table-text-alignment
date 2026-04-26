@@ -19,6 +19,7 @@ def parse_args():
         default="small",
         choices=["debug", "small", "medium", "full"],
     )
+    parser.add_argument("--top_k", type=int, default=None)
 
     return parser.parse_args()
 
@@ -66,6 +67,9 @@ def predict_cells(example, model, tokenizer, config, device):
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+
+    if args.top_k is not None:
+        config["cell_selector"]["top_k"] = args.top_k
 
     data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
     test_dataset = load_from_disk(f"{data_dir}/test")
@@ -123,8 +127,9 @@ def main():
     ensure_dir(pred_dir)
     ensure_dir(metric_dir)
 
-    save_jsonl(records, f"{pred_dir}/cell_selector_predictions.jsonl")
-    save_json(summary, f"{metric_dir}/cell_selector_metrics.json")
+    top_k = config["cell_selector"]["top_k"]
+    save_jsonl(records, f"{pred_dir}/cell_selector_predictions_top{top_k}.jsonl")
+    save_json(summary, f"{metric_dir}/cell_selector_metrics_top{top_k}.json")
 
     print(json.dumps(summary, indent=2, ensure_ascii=False))
 

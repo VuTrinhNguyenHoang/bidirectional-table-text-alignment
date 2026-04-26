@@ -13,3 +13,4 @@ scikit-learn
 tqdm
 pyyaml
 requests
+sentence-transformers
