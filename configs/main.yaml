@@ -59,7 +59,7 @@ training_cell_selector:
   learning_rate: 0.00002
   weight_decay: 0.01
   batch_size: 16
-  gradient_accumulation_steps: 1
+  gradient_accumulation_steps: 2
   eval_steps: 1000
   save_steps: 1000
   logging_steps: 100
