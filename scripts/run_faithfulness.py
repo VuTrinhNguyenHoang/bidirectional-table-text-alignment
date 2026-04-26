@@ -14,12 +14,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
     parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
-    parser.add_argument(
-        "--run_name",
-        type=str,
-        default="linearized",
-        choices=["linearized", "evidence"],
-    )
     return parser.parse_args()
 
 def main():
@@ -28,7 +22,7 @@ def main():
 
     data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
 
-    test_path = f"{data_dir}/test" if args.run_name == "linearized" else f"{data_dir}/test_evidence"
+    test_path = f"{data_dir}/test"
     test_dataset = load_from_disk(test_path)
 
     example_by_id = {
@@ -36,7 +30,7 @@ def main():
         for ex in test_dataset
     }
 
-    pred_path = f"{config['paths']['prediction_dir']}/{args.mode}/{args.run_name}_predictions.jsonl"
+    pred_path = f"{config['paths']['prediction_dir']}/{args.mode}/predictions.jsonl"
     records = load_jsonl(pred_path)
 
     output = []
@@ -58,8 +52,8 @@ def main():
 
     summary = summarize_faithfulness(output)
 
-    out_pred_path = f"{config['paths']['prediction_dir']}/{args.mode}/{args.run_name}_faithfulness.jsonl"
-    out_metric_path = f"{config['paths']['metric_dir']}/{args.mode}/{args.run_name}_faithfulness_summary.json"
+    out_pred_path = f"{config['paths']['prediction_dir']}/{args.mode}/faithfulness.jsonl"
+    out_metric_path = f"{config['paths']['metric_dir']}/{args.mode}/faithfulness_summary.json"
 
     save_jsonl(output, out_pred_path)
     save_json(summary, out_metric_path)

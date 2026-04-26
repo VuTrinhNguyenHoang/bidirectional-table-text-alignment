@@ -1,6 +1,8 @@
 import re
 
-from src.data.serialize import normalize_highlighted_cells
+
+def normalize_highlighted_cells(highlighted_cells):
+    return [(int(r), int(c)) for r, c in highlighted_cells]
 
 
 def get_highlighted_cell_values(example):

@@ -29,7 +29,7 @@ data:
 model:
   name: google-t5/t5-small
   max_input_length: 512
-  max_target_length: 96
+  max_target_length: 64
 
 training:
   epochs: 3
@@ -37,15 +37,11 @@ training:
   gradient_accumulation_steps: 4
   learning_rate: 0.0003
   weight_decay: 0.01
-  eval_steps: 500
-  save_steps: 500
-  logging_steps: 50
+  eval_steps: 3000
+  save_steps: 3000
+  logging_steps: 200
   save_total_limit: 3
 
 generation:
   num_beams: 4
-  max_new_tokens: 96
-
-serialization:
-  evidence_window: 2
-  max_input_tokens: 512
+  max_new_tokens: 64

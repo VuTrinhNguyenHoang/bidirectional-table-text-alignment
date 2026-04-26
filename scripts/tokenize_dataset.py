@@ -5,16 +5,12 @@ from transformers import AutoTokenizer
 
 from src.utils.io import load_yaml
 
+INPUT_COL = "linearized_input"
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
     parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
-    parser.add_argument(
-        "--input_col",
-        type=str,
-        default="linearized_input",
-        choices=["linearized_input", "evidence_input"],
-    )
     return parser.parse_args()
 
 def main():
@@ -25,16 +21,9 @@ def main():
 
     data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
 
-    if args.input_col == "linearized_input":
-        train_path = f"{data_dir}/train"
-        valid_path = f"{data_dir}/valid"
-        test_path = f"{data_dir}/test"
-        run_name = "linearized"
-    else:
-        train_path = f"{data_dir}/train_evidence"
-        valid_path = f"{data_dir}/valid_evidence"
-        test_path = f"{data_dir}/test_evidence"
-        run_name = "evidence"
+    train_path = f"{data_dir}/train"
+    valid_path = f"{data_dir}/valid"
+    test_path = f"{data_dir}/test"
 
     train_dataset = load_from_disk(train_path)
     valid_dataset = load_from_disk(valid_path)
@@ -46,7 +35,7 @@ def main():
     def preprocess(batch):
         sources = [
             "generate: " + str(x)
-            for x in batch[args.input_col]
+            for x in batch[INPUT_COL]
         ]
 
         targets = [
@@ -75,26 +64,26 @@ def main():
         preprocess,
         batched=True,
         remove_columns=train_dataset.column_names,
-        desc=f"Tokenizing train {run_name}"
+        desc="Tokenizing train"
     )
 
     valid_tok = valid_dataset.map(
         preprocess,
         batched=True,
         remove_columns=valid_dataset.column_names,
-        desc=f"Tokenizing valid {run_name}"
+        desc="Tokenizing valid"
     )
 
     test_tok = test_dataset.map(
         preprocess,
         batched=True,
         remove_columns=test_dataset.column_names,
-        desc=f"Tokenizing test {run_name}"
+        desc="Tokenizing test"
     )
 
-    out_train = f"{data_dir}/train_{run_name}_tokenized"
-    out_valid = f"{data_dir}/valid_{run_name}_tokenized"
-    out_test = f"{data_dir}/test_{run_name}_tokenized"
+    out_train = f"{data_dir}/train_tokenized"
+    out_valid = f"{data_dir}/valid_tokenized"
+    out_test = f"{data_dir}/test_tokenized"
 
     train_tok.save_to_disk(out_train)
     valid_tok.save_to_disk(out_valid)
