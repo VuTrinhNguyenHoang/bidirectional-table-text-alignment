@@ -33,15 +33,17 @@ model:
 
 training:
   epochs: 3
-  batch_size: 4
+  batch_size: 8
   gradient_accumulation_steps: 4
   learning_rate: 0.0003
   weight_decay: 0.01
   eval_steps: 3000
   save_steps: 3000
   logging_steps: 200
-  save_total_limit: 3
+  save_total_limit: 2
+  load_best_model_at_end: true
 
 generation:
   num_beams: 4
   max_new_tokens: 64
+  no_repeat_ngram_size: 3
