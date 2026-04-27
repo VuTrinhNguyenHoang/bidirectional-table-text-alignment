@@ -5,11 +5,13 @@ from datasets import Dataset, load_from_disk
 
 from src.data.cell_selection import iter_cell_examples
 from src.utils.io import load_yaml
+from src.utils.modes import add_mode_arg, add_selector_mode_arg, resolve_selector_mode
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
+    add_mode_arg(parser)
+    add_selector_mode_arg(parser)
     return parser.parse_args()
 
 def downsample_negatives(rows, negative_ratio, seed):
@@ -44,8 +46,9 @@ def build_cell_split(dataset, config):
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+    selector_mode = resolve_selector_mode(args)
 
-    data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
+    data_dir = f"{config['paths']['processed_dir']}/{selector_mode}"
 
     train = load_from_disk(f"{data_dir}/train")
     valid = load_from_disk(f"{data_dir}/valid")
@@ -62,6 +65,7 @@ def main():
     print(cell_train)
     print(cell_valid)
     print(cell_test)
+    print(f"Selector mode: {selector_mode}")
 
 if __name__ == "__main__":
     main()

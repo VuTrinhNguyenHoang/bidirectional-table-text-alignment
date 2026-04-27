@@ -4,22 +4,25 @@ from datasets import load_from_disk
 from transformers import AutoTokenizer
 
 from src.utils.io import load_yaml
+from src.utils.modes import add_generator_mode_arg, add_mode_arg, resolve_generator_mode
 
 INPUT_COL = "linearized_input"
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
+    add_mode_arg(parser)
+    add_generator_mode_arg(parser)
     return parser.parse_args()
 
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+    generator_mode = resolve_generator_mode(args)
 
     tokenizer = AutoTokenizer.from_pretrained(config["model"]["name"])
 
-    data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
+    data_dir = f"{config['paths']['processed_dir']}/{generator_mode}"
 
     train_path = f"{data_dir}/train"
     valid_path = f"{data_dir}/valid"
@@ -92,6 +95,7 @@ def main():
     print(train_tok)
     print(valid_tok)
     print(test_tok)
+    print(f"Generator mode: {generator_mode}")
     print(f"Saved tokenized train to: {out_train}")
     print(f"Saved tokenized valid to: {out_valid}")
     print(f"Saved tokenized test to: {out_test}")

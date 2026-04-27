@@ -6,17 +6,21 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from src.utils.io import load_yaml
+from src.utils.modes import (
+    add_generator_mode_arg,
+    add_mode_arg,
+    add_selector_mode_arg,
+    resolve_generator_mode,
+    resolve_selector_mode,
+)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument(
-        "--mode",
-        type=str,
-        default="debug",
-        choices=["debug", "small", "medium", "full"],
-    )
+    add_mode_arg(parser, default="debug")
+    add_generator_mode_arg(parser)
+    add_selector_mode_arg(parser)
     return parser.parse_args()
 
 
@@ -198,14 +202,14 @@ def flatten_generation_metrics(prefix, metrics):
     return out
 
 
-def plot_training_history(config, mode, plot_dir, dpi):
+def plot_training_history(config, generator_mode, selector_mode, plot_dir, dpi):
     checkpoint_root = Path(config["paths"]["checkpoint_dir"])
 
-    generator_dir = checkpoint_root / mode
+    generator_dir = checkpoint_root / generator_mode
     selector_dir = (
         checkpoint_root
         / config["training_cell_selector"]["checkpoint_subdir"]
-        / mode
+        / selector_mode
     )
 
     generator_state = find_latest_trainer_state(generator_dir)
@@ -601,6 +605,8 @@ def plot_e2e_prediction_distributions(config, mode, plot_dir, dpi):
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+    generator_mode = resolve_generator_mode(args)
+    selector_mode = resolve_selector_mode(args)
 
     dpi = config.get("plots", {}).get("dpi", 200)
     output_subdir = config.get("plots", {}).get("output_subdir", "plots")
@@ -608,7 +614,7 @@ def main():
     plot_dir = Path("outputs") / output_subdir / args.mode
     ensure_dir(plot_dir)
 
-    plot_training_history(config, args.mode, plot_dir, dpi)
+    plot_training_history(config, generator_mode, selector_mode, plot_dir, dpi)
     plot_cell_selector_summary(config, args.mode, plot_dir, dpi)
     plot_cell_prediction_distributions(config, args.mode, plot_dir, dpi)
     plot_generation_and_e2e(config, args.mode, plot_dir, dpi)

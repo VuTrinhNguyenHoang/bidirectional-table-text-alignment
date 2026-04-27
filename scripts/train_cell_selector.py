@@ -8,12 +8,14 @@ from transformers import DataCollatorWithPadding, Trainer
 from src.models.cell_selector import load_cell_selector
 from src.training.train_seq2cls import build_training_args
 from src.utils.io import load_yaml
+from src.utils.modes import add_mode_arg, add_selector_mode_arg, resolve_selector_mode
 from src.utils.seed import set_seed
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"],)
+    add_mode_arg(parser)
+    add_selector_mode_arg(parser)
     return parser.parse_args()
 
 def compute_metrics(eval_pred):
@@ -37,11 +39,12 @@ def compute_metrics(eval_pred):
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+    selector_mode = resolve_selector_mode(args)
     set_seed(config["project"]["seed"])
 
     model, tokenizer = load_cell_selector(config["cell_selector"]["name"])
 
-    data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
+    data_dir = f"{config['paths']['processed_dir']}/{selector_mode}"
 
     train_dataset = load_from_disk(f"{data_dir}/cell_train_tokenized")
     valid_dataset = load_from_disk(f"{data_dir}/cell_valid_tokenized")
@@ -49,7 +52,7 @@ def main():
     output_dir = (
         f"{config['paths']['checkpoint_dir']}/"
         f"{config['training_cell_selector']['checkpoint_subdir']}/"
-        f"{args.mode}"
+        f"{selector_mode}"
     )
 
     data_collator = DataCollatorWithPadding(
@@ -75,6 +78,7 @@ def main():
     model.save_pretrained(final_dir)
     tokenizer.save_pretrained(final_dir)
 
+    print(f"Selector mode: {selector_mode}")
     print(f"Saved final cell selector checkpoint to: {final_dir}")
 
 if __name__ == "__main__":

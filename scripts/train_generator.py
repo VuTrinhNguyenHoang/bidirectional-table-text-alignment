@@ -6,27 +6,30 @@ from transformers import DataCollatorForSeq2Seq, Seq2SeqTrainer
 from src.models.generator import load_generator
 from src.training.train_seq2seq import build_training_args
 from src.utils.io import load_yaml
+from src.utils.modes import add_generator_mode_arg, add_mode_arg, resolve_generator_mode
 from src.utils.seed import set_seed
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
+    add_mode_arg(parser)
+    add_generator_mode_arg(parser)
     return parser.parse_args()
 
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+    generator_mode = resolve_generator_mode(args)
     set_seed(config["project"]["seed"])
 
     model, tokenizer = load_generator(config["model"]["name"])
 
-    data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
+    data_dir = f"{config['paths']['processed_dir']}/{generator_mode}"
 
     train_dataset = load_from_disk(f"{data_dir}/train_tokenized")
     valid_dataset = load_from_disk(f"{data_dir}/valid_tokenized")
 
-    output_dir = f"{config['paths']['checkpoint_dir']}/{args.mode}"
+    output_dir = f"{config['paths']['checkpoint_dir']}/{generator_mode}"
 
     data_collator = DataCollatorForSeq2Seq(
         tokenizer=tokenizer,
@@ -52,6 +55,7 @@ def main():
     model.save_pretrained(final_dir)
     tokenizer.save_pretrained(final_dir)
 
+    print(f"Generator mode: {generator_mode}")
     print(f"Saved final checkpoint to: {final_dir}")
 
 if __name__ == "__main__":

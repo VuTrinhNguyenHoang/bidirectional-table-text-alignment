@@ -9,11 +9,12 @@ from src.evaluation.faithfulness import (
     summarize_faithfulness,
 )
 from src.utils.io import load_jsonl, load_yaml, save_json, save_jsonl
+from src.utils.modes import add_mode_arg
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
+    add_mode_arg(parser)
     return parser.parse_args()
 
 def main():

@@ -8,13 +8,15 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from src.evaluation.generation_metrics import compute_generation_metrics
 from src.utils.io import ensure_dir, load_yaml, save_json, save_jsonl
+from src.utils.modes import add_generator_mode_arg, add_mode_arg, resolve_generator_mode
 
 INPUT_COL = "linearized_input"
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument("--mode", type=str, default="small", choices=["debug", "small", "medium", "full"])
+    add_mode_arg(parser)
+    add_generator_mode_arg(parser)
     return parser.parse_args()
 
 def generate_prediction(model, tokenizer, example, config, device):
@@ -38,13 +40,14 @@ def generate_prediction(model, tokenizer, example, config, device):
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+    generator_mode = resolve_generator_mode(args)
 
     data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
     raw_test_path = f"{data_dir}/test"
 
     test_dataset = load_from_disk(raw_test_path)
 
-    checkpoint = f"{config['paths']['checkpoint_dir']}/{args.mode}/final"
+    checkpoint = f"{config['paths']['checkpoint_dir']}/{generator_mode}/final"
 
     tokenizer = AutoTokenizer.from_pretrained(checkpoint)
     model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
@@ -79,6 +82,7 @@ def main():
 
     metrics = compute_generation_metrics(predictions, references)
     metrics["mode"] = args.mode
+    metrics["generator_mode"] = generator_mode
 
     pred_dir = f"{config['paths']['prediction_dir']}/{args.mode}"
     metric_dir = f"{config['paths']['metric_dir']}/{args.mode}"

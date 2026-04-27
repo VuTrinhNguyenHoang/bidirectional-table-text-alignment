@@ -9,16 +9,13 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from src.data.cell_selection import build_cell_text
 from src.evaluation.cell_metrics import average_metric_dicts, compute_cell_metrics
 from src.utils.io import ensure_dir, load_yaml, save_json, save_jsonl
+from src.utils.modes import add_mode_arg, add_selector_mode_arg, resolve_selector_mode
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument(
-        "--mode",
-        type=str,
-        default="small",
-        choices=["debug", "small", "medium", "full"],
-    )
+    add_mode_arg(parser)
+    add_selector_mode_arg(parser)
     parser.add_argument("--top_k", type=int, default=None)
 
     return parser.parse_args()
@@ -67,6 +64,7 @@ def predict_cells(example, model, tokenizer, config, device):
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+    selector_mode = resolve_selector_mode(args)
 
     if args.top_k is not None:
         config["cell_selector"]["top_k"] = args.top_k
@@ -77,7 +75,7 @@ def main():
     checkpoint = (
         f"{config['paths']['checkpoint_dir']}/"
         f"{config['training_cell_selector']['checkpoint_subdir']}/"
-        f"{args.mode}/final"
+        f"{selector_mode}/final"
     )
 
     tokenizer = AutoTokenizer.from_pretrained(checkpoint)
@@ -119,6 +117,7 @@ def main():
 
     summary = average_metric_dicts(metric_records)
     summary["mode"] = args.mode
+    summary["selector_mode"] = selector_mode
     summary["top_k"] = config["cell_selector"]["top_k"]
 
     pred_dir = f"{config['paths']['prediction_dir']}/{args.mode}"

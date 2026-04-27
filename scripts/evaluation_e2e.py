@@ -24,16 +24,20 @@ from src.evaluation.consistency import (
 )
 from src.evaluation.generation_metrics import compute_generation_metrics
 from src.utils.io import ensure_dir, load_yaml, save_json, save_jsonl
+from src.utils.modes import (
+    add_generator_mode_arg,
+    add_mode_arg,
+    add_selector_mode_arg,
+    resolve_generator_mode,
+    resolve_selector_mode,
+)
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/main.yaml")
-    parser.add_argument(
-        "--mode",
-        type=str,
-        default="small",
-        choices=["debug", "small", "medium", "full"],
-    )
+    add_mode_arg(parser)
+    add_generator_mode_arg(parser)
+    add_selector_mode_arg(parser)
     parser.add_argument("--top_k", type=int, default=None)
 
     return parser.parse_args()
@@ -102,6 +106,8 @@ def generate_prediction(model, tokenizer, linearized_input, config, device):
 def main():
     args = parse_args()
     config = load_yaml(args.config)
+    generator_mode = resolve_generator_mode(args)
+    selector_mode = resolve_selector_mode(args)
 
     if args.top_k is not None:
         config["cell_selector"]["top_k"] = args.top_k
@@ -109,11 +115,11 @@ def main():
     data_dir = f"{config['paths']['processed_dir']}/{args.mode}"
     test_dataset = load_from_disk(f"{data_dir}/test")
 
-    generator_checkpoint = f"{config['paths']['checkpoint_dir']}/{args.mode}/final"
+    generator_checkpoint = f"{config['paths']['checkpoint_dir']}/{generator_mode}/final"
     selector_checkpoint = (
         f"{config['paths']['checkpoint_dir']}/"
         f"{config['training_cell_selector']['checkpoint_subdir']}/"
-        f"{args.mode}/final"
+        f"{selector_mode}/final"
     )
 
     generator_tokenizer = AutoTokenizer.from_pretrained(generator_checkpoint)
@@ -216,6 +222,8 @@ def main():
 
     metrics = {
         "mode": args.mode,
+        "generator_mode": generator_mode,
+        "selector_mode": selector_mode,
         "top_k": config["cell_selector"]["top_k"],
         "cell_selection": average_metric_dicts(cell_metric_records),
 
