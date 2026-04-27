@@ -51,11 +51,11 @@ generation:
 cell_selector:
   name: distilbert-base-uncased
   max_input_length: 384
-  top_k: 5
+  top_k: 3
 
 training_cell_selector:
   epochs: 3
-  negative_ratio: 5
+  negative_ratio: 3
   learning_rate: 0.00002
   weight_decay: 0.01
   batch_size: 16
