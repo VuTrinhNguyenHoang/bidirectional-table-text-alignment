@@ -6,8 +6,8 @@ from datasets import load_from_disk
 from tqdm.auto import tqdm
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from src.data.cell_selection import build_cell_text
 from src.evaluation.cell_metrics import average_metric_dicts, compute_cell_metrics
+from src.evaluation.selector_inference import predict_cells
 from src.utils.io import ensure_dir, load_yaml, save_json, save_jsonl
 from src.utils.modes import add_mode_arg, add_selector_mode_arg, resolve_selector_mode
 
@@ -17,49 +17,16 @@ def parse_args():
     add_mode_arg(parser)
     add_selector_mode_arg(parser)
     parser.add_argument("--top_k", type=int, default=None)
+    parser.add_argument("--threshold", type=float, default=None)
 
     return parser.parse_args()
 
-@torch.no_grad()
-def predict_cells(example, model, tokenizer, config, device):
-    candidates = []
+def threshold_tag(threshold):
+    if threshold is None:
+        return None
 
-    for row_idx, row in enumerate(example["table"]):
-        for col_idx, _ in enumerate(row):
-            text = build_cell_text(example, row_idx, col_idx)
+    return f"threshold{threshold:.4f}".replace(".", "p")
 
-            inputs = tokenizer(
-                text,
-                return_tensors="pt",
-                truncation=True,
-                max_length=config["cell_selector"]["max_input_length"],
-            ).to(device)
-
-            logits = model(**inputs).logits
-            score = torch.softmax(logits, dim=-1)[0, 1].item()
-
-            candidates.append(
-                {
-                    "row_idx": row_idx,
-                    "col_idx": col_idx,
-                    "score": score,
-                }
-            )
-
-    candidates = sorted(
-        candidates,
-        key=lambda item: item["score"],
-        reverse=True,
-    )
-
-    top_k = config["cell_selector"]["top_k"]
-
-    pred_cells = [
-        [item["row_idx"], item["col_idx"]]
-        for item in candidates[:top_k]
-    ]
-
-    return pred_cells, candidates
 
 def main():
     args = parse_args()
@@ -89,12 +56,13 @@ def main():
     metric_records = []
 
     for example in tqdm(test_dataset, desc="Evaluating cell selector"):
-        pred_cells, ranked_cells = predict_cells(
+        pred_cells, ranked_cells, selection_info = predict_cells(
             example=example,
             model=model,
             tokenizer=tokenizer,
             config=config,
             device=device,
+            threshold=args.threshold,
         )
 
         metrics = compute_cell_metrics(
@@ -111,6 +79,7 @@ def main():
                 "gold_highlighted_cells": example["highlighted_cells"],
                 "pred_highlighted_cells": pred_cells,
                 "cell_metrics": metrics,
+                "selection_info": selection_info,
                 "ranked_cells": ranked_cells[:20],
             }
         )
@@ -119,6 +88,12 @@ def main():
     summary["mode"] = args.mode
     summary["selector_mode"] = selector_mode
     summary["top_k"] = config["cell_selector"]["top_k"]
+    summary["threshold"] = args.threshold
+    summary["selection_strategy"] = (
+        "top_k"
+        if args.threshold is None
+        else "threshold_with_top_k_fallback"
+    )
 
     pred_dir = f"{config['paths']['prediction_dir']}/{args.mode}"
     metric_dir = f"{config['paths']['metric_dir']}/{args.mode}"
@@ -127,8 +102,12 @@ def main():
     ensure_dir(metric_dir)
 
     top_k = config["cell_selector"]["top_k"]
-    save_jsonl(records, f"{pred_dir}/cell_selector_predictions_top{top_k}.jsonl")
-    save_json(summary, f"{metric_dir}/cell_selector_metrics_top{top_k}.json")
+    tag = f"top{top_k}"
+    if args.threshold is not None:
+        tag = f"{threshold_tag(args.threshold)}_{tag}"
+
+    save_jsonl(records, f"{pred_dir}/cell_selector_predictions_{tag}.jsonl")
+    save_json(summary, f"{metric_dir}/cell_selector_metrics_{tag}.json")
 
     print(json.dumps(summary, indent=2, ensure_ascii=False))
 
