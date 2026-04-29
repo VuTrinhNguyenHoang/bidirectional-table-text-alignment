@@ -7,17 +7,18 @@ from src.data.totto_preprocessing import (
 def normalize_cell_indices(highlighted_cells):
     return {(int(r), int(c)) for r, c in highlighted_cells}
 
-def build_cell_text(example, row_idx, col_idx):
+def build_cell_text(example, row_idx, col_idx, adjusted_table=None):
     table = example["table"]
     cell = table[row_idx][col_idx]
 
-    adjusted_table = _add_adjusted_col_offsets(table)
+    if adjusted_table is None:
+        adjusted_table = _add_adjusted_col_offsets(table)
+
     row_headers = _get_heuristic_row_headers(adjusted_table, row_idx, col_idx)
     col_headers = _get_heuristic_col_headers(adjusted_table, row_idx, col_idx)
 
     parts = []
 
-    # Claim/text side. Trong ToTTo processed của bạn, target là câu reference.
     parts.append("<claim> " + str(example["target"]) + " </claim>")
 
     if example.get("table_page_title"):
@@ -42,6 +43,7 @@ def build_cell_text(example, row_idx, col_idx):
 def iter_cell_examples(example):
     gold = normalize_cell_indices(example["highlighted_cells"])
     table = example["table"]
+    adjusted_table = _add_adjusted_col_offsets(table)
 
     for r_idx, row in enumerate(table):
         for c_idx, _ in enumerate(row):
@@ -50,7 +52,12 @@ def iter_cell_examples(example):
                 "totto_id": example["totto_id"],
                 "row_idx": r_idx,
                 "col_idx": c_idx,
-                "text": build_cell_text(example, r_idx, c_idx),
+                "text": build_cell_text(
+                    example,
+                    r_idx,
+                    c_idx,
+                    adjusted_table=adjusted_table,
+                ),
                 "label": 1 if (r_idx, c_idx) in gold else 0,
             }
 

@@ -30,6 +30,10 @@ model:
   name: google-t5/t5-small
   max_input_length: 512
   max_target_length: 64
+  
+  max_full_table_cells: 1000
+  max_candidates: 512
+  inference_batch_size: 64
 
 training:
   epochs: 3
