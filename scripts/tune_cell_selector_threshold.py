@@ -52,6 +52,9 @@ def summarize_threshold(scored_examples, threshold, top_k):
     empty_count = 0
     overflow_count = 0
     selected_count = 0
+    filtered_count = 0
+    total_table_cells = 0
+    total_candidate_cells = 0
 
     for item in scored_examples:
         pred_cells, _, selection_info = select_cells_from_candidates(
@@ -71,6 +74,10 @@ def summarize_threshold(scored_examples, threshold, top_k):
         empty_count += int(threshold_selected_count == 0)
         overflow_count += int(threshold_selected_count > top_k)
         selected_count += selection_info["selected_count"]
+        filter_info = item.get("candidate_filter_info", {})
+        filtered_count += int(filter_info.get("candidate_filter_applied", False))
+        total_table_cells += filter_info.get("n_table_cells", 0)
+        total_candidate_cells += filter_info.get("n_candidate_cells", 0)
 
     summary = average_metric_dicts(metric_records)
     total = len(scored_examples)
@@ -83,6 +90,9 @@ def summarize_threshold(scored_examples, threshold, top_k):
             "empty_threshold_rate": empty_count / total if total else 0.0,
             "overflow_threshold_rate": overflow_count / total if total else 0.0,
             "avg_selected_count": selected_count / total if total else 0.0,
+            "candidate_filter_rate": filtered_count / total if total else 0.0,
+            "avg_table_cells": total_table_cells / total if total else 0.0,
+            "avg_candidate_cells": total_candidate_cells / total if total else 0.0,
         }
     )
 
@@ -118,18 +128,21 @@ def main():
 
     scored_examples = []
     for example in tqdm(dataset, desc=f"Scoring selector on {args.split}"):
+        candidates, candidate_filter_info = score_table_cells(
+            example=example,
+            model=model,
+            tokenizer=tokenizer,
+            config=config,
+            device=device,
+        )
+
         scored_examples.append(
             {
                 "example_id": example["example_id"],
                 "totto_id": example["totto_id"],
                 "gold_cells": example["highlighted_cells"],
-                "candidates": score_table_cells(
-                    example=example,
-                    model=model,
-                    tokenizer=tokenizer,
-                    config=config,
-                    device=device,
-                ),
+                "candidates": candidates,
+                "candidate_filter_info": candidate_filter_info,
             }
         )
 
