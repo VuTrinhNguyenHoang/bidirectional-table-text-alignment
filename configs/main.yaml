@@ -22,6 +22,10 @@ data:
     train: 20000
     valid: 5000
 
+  large:
+    train: 50000
+    valid: 7000
+
   full:
     train: null
     valid: null

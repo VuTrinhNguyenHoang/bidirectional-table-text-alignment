@@ -1,4 +1,4 @@
-MODES = ("debug", "small", "medium", "full")
+MODES = ("debug", "small", "medium", "large", "full")
 
 
 def add_mode_arg(parser, default="small"):
