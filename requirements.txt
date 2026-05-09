@@ -14,3 +14,4 @@ tqdm
 pyyaml
 requests
 sentence-transformers
+streamlit

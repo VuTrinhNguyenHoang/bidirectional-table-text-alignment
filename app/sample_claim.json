@@ -1,0 +1,16 @@
+{
+  "table_page_title": "FIFA World Cup Finals",
+  "table_section_title": "Selected finals",
+  "text_claim": "Brazil won the 2002 FIFA World Cup final 2-0 against Germany.",
+  "table": [
+    [
+      {"value": "Year", "is_header": true},
+      {"value": "Winner", "is_header": true},
+      {"value": "Score", "is_header": true},
+      {"value": "Runner-up", "is_header": true}
+    ],
+    ["1998", "France", "3-0", "Brazil"],
+    ["2002", "Brazil", "2-0", "Germany"],
+    ["2006", "Italy", "1-1", "France"]
+  ]
+}
